@@ -1,0 +1,191 @@
+<?php
+
+/**
+* Implements hook_install().
+*/
+function sandbox_install() {
+  $vocab = (object) array(
+    'name' => 'Application status',
+    'machine_name' => 'application_status',
+    'description' => 'Processing status of job application',
+    'module' => 'sandbox',
+  );
+  taxonomy_vocabulary_save($vocab);
+  
+  if(!db_table_exists('field_data_field_transitional')) {
+	$field = array(
+	  'translatable' => '0',
+      'field_name' => 'field_transitional',
+      'type' => 'list_boolean',
+      'settings' => array(
+        'allowed_values' => array(
+          '',
+          '',
+        ),
+        'allowed_values_function' => '',
+      ),
+      'module' => 'list',
+      'active' => '1',
+      'locked' => '0',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'columns' => array(
+        'value' => array(
+          'type' => 'int',
+          'not null' => FALSE,
+        ),
+      ),    
+      'bundles' => array(
+        'taxonomy_term' => array(
+          'application_status',
+        ),
+      ),
+    );
+	field_create_field($field);
+  }
+  // Attach the field to our taxonomy entity
+  
+  $instance = array(
+    'label' => t('Indicates whether this is a transitional status'),
+    'widget' => array(
+      'weight' => '1',
+      'type' => 'options_onoff',
+      'module' => 'options',
+      'active' => 1,
+      'settings' => array(
+        'display_label' => 0,
+      ),
+    ),
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'type' => 'list_default',
+        'module' => 'list',
+        'weight' => 0,
+      ),
+    ),
+    'required' => 0,
+    'description' => t('Flag indicating transitional status'),
+    'default_value' => array(
+      array(
+        'value' => 0,
+      ),
+    ),
+    'field_name' => 'field_transitional',
+    'entity_type' => 'taxonomy_term',
+    'bundle' => 'application_status',
+    'deleted' => '0',
+  );
+  
+  field_create_instance($instance);
+
+  foreach (_application_status_vocab_terms($vocab->vid) as $term) {
+    taxonomy_term_save($term);
+  }
+  
+  $terms = taxonomy_get_term_by_name('Pending');
+  reset($terms);
+  $default_tid = key($terms);
+  
+  if(!db_table_exists('field_data_job_application_status')) {
+    $field = array(
+      'field_name'  => 'job_application_status',
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => 'application_status',
+            'parent' => 0
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
+  }
+
+  $instance = array(
+    'field_name'  => 'job_application_status',
+    'entity_type' => 'node',
+    'label' => 'Status',
+    'bundle' => 'job_application',
+    'required' => true,
+    'widget' => array(
+      'type' => 'options_select'
+    ),
+    'display' => array(
+      'default' => array(
+        'label' => 'inline',
+        'type' => 'taxonomy_term_reference_link',
+	  ),
+      'teaser' => array(
+        'label' => 'hidden',
+        'type' => 'taxonomy_term_reference_link',
+      ),
+    ),
+    'default_value' => array(
+	  array(
+	    'tid' => $default_tid,
+	  ),
+    ),
+  );
+  field_create_instance($instance);
+}
+
+function _application_status_vocab_terms($vid) {
+  return array (
+    (object) array(
+      'name' => 'Pending',
+      'description' => 'Awaiting initial review',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>1))),
+      'vid' => $vid,
+    ),
+    (object) array(
+      'name' => 'Short-listed',
+      'description' => 'Awaiting interview',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>1))),
+      'vid' => $vid,
+    ),
+    (object) array(
+      'name' => 'Information requested',
+      'description' => 'Initial review complete and further information requested',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>1))),
+      'vid' => $vid,
+    ),
+    (object) array(
+      'name' => 'Preferred candidate',
+      'description' => 'Candidate selected after interview and offer made',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>1))),
+      'vid' => $vid,
+    ),
+    (object) array(
+      'name' => 'Appointed',
+      'description' => 'Candidate has signed contract and joining date agreed',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>0))),
+      'vid' => $vid,
+    ),
+    (object) array(
+      'name' => 'Reserve',
+      'description' => 'Interviewed, not preferred candidate but acceptable',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>1))),
+      'vid' => $vid,
+    ),
+    (object) array(
+      'name' => 'Not selected',
+      'description' => 'Candidate not chosen for this role',
+      'field_transitional'=>array('und'=>array(0=>array('value'=>0))),
+      'vid' => $vid,
+    ),
+  );
+}
+
+/**
+* Implements hook_uninstall().
+*/
+function sandbox_uninstall() {
+  $vocab = taxonomy_vocabulary_machine_name_load('application_status');
+  taxonomy_vocabulary_delete($vocab->vid);
+}

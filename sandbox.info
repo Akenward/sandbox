@@ -1,0 +1,8 @@
+name = Sandbox
+description = Form on the fly.
+package = Other
+core = 7.x
+
+; Dependencies
+
+dependencies[] = entity
