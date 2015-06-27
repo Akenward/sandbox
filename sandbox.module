@@ -42,7 +42,7 @@ $language, $items, $form, $form_state);
     // set a #access attribute in the form to tell the calling function
     // that there is a form and that it can be displayed
     $form['#access'] =  true;
-    // save the array of editable fields in the form
+    // save the array of editable fields in the form for reference
     $form['fields_replaced'] = array(
       '#type' => 'value',
       '#value' => $edit_fields,
@@ -51,12 +51,10 @@ $language, $items, $form, $form_state);
       '#type' => 'submit',
       '#value' => t("Save"),
     );
-    // specify a CSS class for the form 
-    $form['#attributes']['class'][] = 'request-updater';
   }
   else {
     // if fields are not to be exposed for editing for the current state 
-    // of the node and/or permissions of the current user, the form is
+    // of the node and/or credentials of the current user, the form is
     // returned empty except for the #access attribute set to false
     $form['#access'] = false;
   }
@@ -74,7 +72,7 @@ function request_updater_validate ($form, &$form_state) {
  * submit handler for the updater form
  */
 function request_updater_submit($form, &$form_state) {
-  // use the nid stored in the form to access the node object
+  // use the nid stored in the form to retrieve the node object
   $request = node_load($form['request_nid']['#value']);
   $language = $request->language;
   // Update the node with values from $form_state
