@@ -8,10 +8,10 @@ function request_updater($form, &$form_state, $nid) {
   $request = node_load($nid);
   $language = $request->language;
   $current_status = $request->field_request_status[$language][0]['taxonomy_term'];
-  // Updates are only allowed to the status and/or notes if the request status is 
-  // transitional and not an end-state.
+  // Updates are only allowed to the status or notes if the current status of the request is 
+  // 'transitional' (not an end-state).
   $transitional = ($current_status->field_transitional[$language][0]['value']);
-  // We also need to check that the user is authenticated.
+  // We also need to check that the current user is authenticated.
   if (user_is_logged_in() && $transitional) {
     // If the form has no parent, we can get errors with some more complex field types
     // including term reference
@@ -30,19 +30,21 @@ function request_updater($form, &$form_state, $nid) {
       $instance = field_info_instance('node', $field_name, 'request');
       $field = field_info_field_by_id($instance['field_id']);
       $items = field_get_items('node', $request, $field_name);
-      $form[] = field_default_form ('node', $request, $field, $instance,
+	  $form_element = field_default_form('node', $request, $field, $instance, 
 $language, $items, $form, $form_state);
+      $form = array_merge($form, $form_element);
     }
     // save the nid as a value in the form so it can be accessed by the
-    // submit (and validation) handler
+    // submit and validation handlers
     $form['request_nid'] = array(
       '#type' => 'value',
       '#value' => $nid,
     );
-    // set a #access attribute in the form to tell the calling function
-    // that there is a form and that it can be displayed
+    // set the #access attribute for the form to 'true' to tell the function 
+    // receiving it that the form is not empty and that it can be displayed
     $form['#access'] =  true;
-    // save the array of editable fields in the form for reference
+    // save the array of editable fields in the form as an easy reference
+    // for the receiving function
     $form['fields_replaced'] = array(
       '#type' => 'value',
       '#value' => $edit_fields,
@@ -75,7 +77,7 @@ function request_updater_submit($form, &$form_state) {
   // use the nid stored in the form to retrieve the node object
   $request = node_load($form['request_nid']['#value']);
   $language = $request->language;
-  // Update the node with values from $form_state
+  // Update the node with new values from $form_state
   field_attach_submit('node', $request, $form, $form_state, array());
   // if the status of the application has changed to an end-state, 
   // then the value of 'decision date' (ISO date field) is set for today
