@@ -7,10 +7,11 @@
 function request_updater($form, &$form_state, $nid) {
   $request = node_load($nid);
   $language = $request->language;
-  $current_status = $request->field_request_status[$language][0]['taxonomy_term'];
+  $current_status_tid = $request->field_request_status[$language][0]['tid'];
+  $current_status_term = taxonomy_term_load($current_status_tid);
   // Updates are only allowed to the status or notes if the current status of the request is 
   // 'transitional' (not an end-state).
-  $transitional = ($current_status->field_transitional[$language][0]['value']);
+  $transitional = ($current_status_term->field_transitional[$language][0]['value']);
   // We also need to check that the current user is authenticated.
   if (user_is_logged_in() && $transitional) {
     // If the form has no parent, we can get errors with some more complex field types
@@ -21,7 +22,8 @@ function request_updater($form, &$form_state, $nid) {
     // Set up an array containing the fields to be made editable
     $edit_fields = array(
       'field_request_status',
-      'body'
+      'body',
+      'field_remarks',
     );
     // loop through the editable fields using field_default_form to produce 
     // a form element for each field based on its default widget and with
